@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>createMediaStreamDestination() demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.0/axios.js"></script>
+  </head>
+  <body>
+    <button id="startButton" disabled>start</button>
+    <button id="stopButton" disabled>stop</button>
+    <audio id="player" controls></audio>
+    <script>
+      var _stream = null
+      var _context = null
+      var _mediaRecorder = null
+      var _chunks = []
+      const player = document.getElementById('player')
+
+      var _stream = null
+      var startButton = document.getElementById('startButton')
+      var stopButton = document.getElementById('stopButton')
+
+      startButton.addEventListener('click', function() {
+        startRecord()
+      })
+
+      stopButton.addEventListener('click', function() {
+        stopRecord()
+      })
+
+      const startRecord = function() {
+        console.log('startRecord')
+        startButton.disabled = true
+        stopButton.disabled = false
+
+        _context = new AudioContext()
+        // const source = _context.createBufferSource()
+        const source = _context.createMediaStreamSource(_stream)
+        const processor = _context.createScriptProcessor(8192, 1, 1)
+        source.connect(processor)
+        processor.connect(_context.destination)
+        processor.onaudioprocess = function(audioProcessingEvent) {
+          // The input buffer is the song we loaded earlier
+          var inputBuffer = audioProcessingEvent.inputBuffer
+
+          // The output buffer contains the samples that will be modified and played
+          var outputBuffer = audioProcessingEvent.outputBuffer
+          // Loop through the output channels (in this case there is only one)
+          for (
+            var channel = 0;
+            channel < outputBuffer.numberOfChannels;
+            channel++
+          ) {
+            var inputData = inputBuffer.getChannelData(channel)
+            var outputData = outputBuffer.getChannelData(channel)
+
+            // Loop through the 8192 samples
+            for (var sample = 0; sample < inputBuffer.length; sample++) {
+              // make output equal to the same as the input
+              outputData[sample] = inputData[sample]
+              axios.post('http://localhost:5530/', sample)
+            }
+          }
+        }
+      }
+
+      const stopRecord = function() {
+        console.log('stopRecord')
+        startButton.disabled = false
+        stopButton.disabled = true
+        _context.close()
+        // _mediaRecorder.stop()
+      }
+
+      const handleSuccess = function(stream) {}
+
+      navigator.mediaDevices
+        .getUserMedia({ audio: true, video: false })
+        .then(function(stream) {
+          startButton.disabled = false
+          _stream = stream
+        })
+    </script>
+  </body>
+</html>

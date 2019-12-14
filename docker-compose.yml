@@ -1,0 +1,14 @@
+version: "3.5"
+
+services:
+  julius:
+    build: .
+    ports:
+      - "10500:10500"
+      - "5530:5530"
+    networks:
+      - juliusservice
+
+networks:
+  juliusservice:
+    name: julius_network
